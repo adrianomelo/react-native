@@ -16,14 +16,17 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Picture;
 import android.net.Uri;
 import android.os.Build;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.ViewGroup.LayoutParams;
 import android.webkit.GeolocationPermissions;
+import android.webkit.HttpAuthHandler;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -105,6 +108,36 @@ public class ReactWebViewManager extends SimpleViewManager<WebView> {
   protected static class ReactWebViewClient extends WebViewClient {
 
     private boolean mLastLoadFailed = false;
+
+    private WebViewDialogsHandler mWebViewDialogsHandler;
+
+    ReactWebViewClient(ThemedReactContext reactContext) {
+      Context context = reactContext.getBaseContext();
+      mWebViewDialogsHandler = new WebViewDialogsHandler(context);
+    }
+
+    @Override
+    public void onReceivedHttpAuthRequest(WebView view, HttpAuthHandler handler, String host, String realm) {
+      String username = null;
+      String password = null;
+
+      boolean reuseHttpAuthUsernamePassword
+        = handler.useHttpAuthUsernamePassword();
+
+      if (reuseHttpAuthUsernamePassword && view != null) {
+        String[] credentials = view.getHttpAuthUsernamePassword(host, realm);
+        if (credentials != null && credentials.length == 2) {
+          username = credentials[0];
+          password = credentials[1];
+        }
+      }
+
+      if (username != null && password != null) {
+        handler.proceed(username, password);
+      } else {
+        mWebViewDialogsHandler.showHttpAuthentication(view, handler, host, realm);
+      }
+    }
 
     @Override
     public void onPageFinished(WebView webView, String url) {
@@ -462,7 +495,7 @@ public class ReactWebViewManager extends SimpleViewManager<WebView> {
   @Override
   protected void addEventEmitters(ThemedReactContext reactContext, WebView view) {
     // Do not register default touch emitter and let WebView implementation handle touches
-    view.setWebViewClient(new ReactWebViewClient());
+    view.setWebViewClient(new ReactWebViewClient(reactContext));
   }
 
   @Override
