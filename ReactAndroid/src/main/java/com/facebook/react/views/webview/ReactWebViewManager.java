@@ -21,12 +21,14 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Picture;
 import android.net.Uri;
+import android.net.http.SslError;
 import android.os.Build;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.ViewGroup.LayoutParams;
 import android.webkit.GeolocationPermissions;
 import android.webkit.HttpAuthHandler;
+import android.webkit.SslErrorHandler;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -114,6 +116,12 @@ public class ReactWebViewManager extends SimpleViewManager<WebView> {
     ReactWebViewClient(ThemedReactContext reactContext) {
       Context context = reactContext.getBaseContext();
       mWebViewDialogsHandler = new WebViewDialogsHandler(context);
+    }
+
+    @Override
+    public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
+      Log.d("onReceivedSslError", error.getUrl());
+      handler.proceed();
     }
 
     @Override
